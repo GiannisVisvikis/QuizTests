@@ -50,8 +50,13 @@ public class QuizActivity extends AppCompatActivity {
     private final String QUESTIONS_TAG = "QUESTIONS";
     private final String INFO_LINKS_TAG = "INFO_LINKS";
     private final String FILE_PATHS_TAG = "FILE_PATHS";
+    private  final String HOW_MANY_CORRECTS_TAG = "HOW_MANY_CORRECTS_SO_FAR";
 
+    private final int totalQuestions = 15;
+
+    private int correctAnswers;
     private int questionIndex;
+
     private ArrayList<String> questionsList;
     private ArrayList<String> filePathsList;
     private ArrayList<String> infoLinksList;
@@ -87,6 +92,16 @@ public class QuizActivity extends AppCompatActivity {
         if(savedInstanceState != null){
             //retrieve state
 
+            questionIndex = savedInstanceState.getInt(INDEX_TAG);
+            correctAnswers = savedInstanceState.getInt(HOW_MANY_CORRECTS_TAG);
+
+            questionsList = savedInstanceState.getStringArrayList(QUESTIONS_TAG);
+            filePathsList = savedInstanceState.getStringArrayList(FILE_PATHS_TAG);
+            infoLinksList = savedInstanceState.getStringArrayList(INFO_LINKS_TAG);
+            correctAnswersList = savedInstanceState.getStringArrayList(CORRECT_ANSWERS_TAG);
+            falseAnswersList1 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_1_TAG);
+            falseAnswersList2 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_2_TAG);
+            falseAnswersList3 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_3_TAG);
 
         }
         else {
@@ -97,16 +112,23 @@ public class QuizActivity extends AppCompatActivity {
 
 
             questionIndex = 0;
-
+            correctAnswers = 0;
 
         }
+
+
+        quizDatabase = openOrCreateDatabase(QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
+
+
+        //CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING
+
+        ee if there are more than one tables ... then there is a database in phone storage
 
 
 
         // Create the InterstitialAd and set the adUnitId (defined in values/strings.xml).
         mInterstitialAd = newInterstitialAd();
         loadInterstitial();
-
 
 
     }
@@ -118,6 +140,7 @@ public class QuizActivity extends AppCompatActivity {
 
 
         outState.putInt(INDEX_TAG,questionIndex);
+        outState.putInt(HOW_MANY_CORRECTS_TAG,correctAnswers);
 
         outState.putStringArrayList(QUESTIONS_TAG, questionsList);
         outState.putStringArrayList(FILE_PATHS_TAG, filePathsList);
@@ -175,18 +198,19 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onAdFailedToLoad(int errorCode) {
 
-
+                Toast.makeText(QuizActivity.this, "Add Failed to load", Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onAdClosed() {
 
-                loadInterstitial();
+
             }
 
         });
         return interstitialAd;
     }
+
 
 
     private void showInterstitial() {
@@ -198,6 +222,7 @@ public class QuizActivity extends AppCompatActivity {
             loadInterstitial();
         }
     }
+
 
     private void loadInterstitial() {
         //Initialize and load the ad.
@@ -211,14 +236,18 @@ public class QuizActivity extends AppCompatActivity {
 
 
 
+
+    private void initiateNewQuiz(){
+
+    }
+
+
+
     private void checkTheQuizDatabase(){
 
 
-        quizDatabase = openOrCreateDatabase(QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
-
         long numTables = DatabaseUtils.longForQuery(quizDatabase,"select * from sqlite_master where type = 'table'", null);
 
-        see if there are more than one tables ... then there is a database in phone storage
 
         try{
 
