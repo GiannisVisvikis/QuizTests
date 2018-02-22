@@ -4,6 +4,7 @@ import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.InterstitialAd;
 
+import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -23,8 +24,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.sql.SQLInput;
 import java.util.ArrayList;
 
 
@@ -36,11 +36,13 @@ public class QuizActivity extends AppCompatActivity {
     private InterstitialAd mInterstitialAd;
 
 
-    SQLiteDatabase quizDatabase;
+    private SQLiteDatabase quizDatabase;
 
     private final String INDEX_TAG = "INDEX_TAG";
     private final String QUIZ_DATABASE_NAME = "quiz_database.db";
     private final String TO_CHECK_QUIZ_DATABASE_NAME = "new_quiz_database.db";
+
+    private final int QUIZ_LOADER_TASK_ID = 1;
 
     //ArrayLists tags
     private final String CORRECT_ANSWERS_TAG = "CORRECT_ANSWERS";
@@ -78,7 +80,7 @@ public class QuizActivity extends AppCompatActivity {
 
         AppCompatTextView quizQuestion = findViewById(R.id.quiz_question_text);
 
-        LinearLayout moreInfoLayout = findViewById(R.id.more_info)
+        LinearLayout moreInfoLayout = findViewById(R.id.more_info);
 
         AppCompatButton answerButton1 = findViewById(R.id.answer_button_1);
 
@@ -87,6 +89,8 @@ public class QuizActivity extends AppCompatActivity {
         AppCompatButton answerButton3 = findViewById(R.id.answer_button_3);
 
         AppCompatButton answerButton4 = findViewById(R.id.answer_button_4);
+
+        quizDatabase = openOrCreateDatabase(QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
 
 
         if(savedInstanceState != null){
@@ -105,24 +109,18 @@ public class QuizActivity extends AppCompatActivity {
 
         }
         else {
-
-            //Check if database file in assets holds more entries than the one stored in /data/data/package/databases/...
-            //Delete the old database file if exists and copy the new into the data bases place in the app and then select
-            //questions
-
-
             questionIndex = 0;
             correctAnswers = 0;
 
+            //TODO CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING
+            prepareTheQuizDatabase();
+
+
+            //TODO when the task loader is finished, take each QuizQuestion object and fill in the ArrayLists
+
+            DO WORK HERE
+
         }
-
-
-        quizDatabase = openOrCreateDatabase(QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
-
-
-        //CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING
-
-        ee if there are more than one tables ... then there is a database in phone storage
 
 
 
@@ -150,8 +148,6 @@ public class QuizActivity extends AppCompatActivity {
         outState.putStringArrayList(FALSE_ANSWERS_1_TAG, falseAnswersList1);
         outState.putStringArrayList(FALSE_ANSWERS_2_TAG, falseAnswersList2);
         outState.putStringArrayList(FALSE_ANSWERS_3_TAG, falseAnswersList3);
-
-
 
     }
 
@@ -198,16 +194,17 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onAdFailedToLoad(int errorCode) {
 
-                Toast.makeText(QuizActivity.this, "Add Failed to load", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Add Failed to load", Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onAdClosed() {
 
-
+                Toast.makeText(getApplicationContext(), "Ad was closed", Toast.LENGTH_LONG).show();
             }
 
         });
+
         return interstitialAd;
     }
 
@@ -222,6 +219,7 @@ public class QuizActivity extends AppCompatActivity {
             loadInterstitial();
         }
     }
+
 
 
     private void loadInterstitial() {
@@ -242,19 +240,39 @@ public class QuizActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * Calls for a check in the quiz database for any updates or to create it if the database does not exist
+     * and then call to initiates the AsyncTaskHolder to set up the quiz
+     */
+    private void prepareTheQuizDatabase(){
 
-    private void checkTheQuizDatabase(){
+        quizDatabase = checkForUpdates();
+
+        initiateNewQuiz();
+    }
 
 
-        long numTables = DatabaseUtils.longForQuery(quizDatabase,"select * from sqlite_master where type = 'table'", null);
+    /**
+     * Temporarily copy the database file from the assets folder and check if any table holds more rows than the old one
+     *
+     * @return either the existing sqlite database or the updated one if exists
+     *
+     */
+    private SQLiteDatabase checkForUpdates(){
 
+        //access the old database (or create it for the first time)
+
+        SQLiteDatabase quizDatabase = openOrCreateDatabase(QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
+
+        //temporarily copy the sqlite.db file from assets in the storage and check for any updates
+
+        File newDatabaseFile = new File("/data/data/" + getPackageName() +"/databases/" + TO_CHECK_QUIZ_DATABASE_NAME);
 
         try{
 
             BufferedInputStream inputStream = new BufferedInputStream(getAssets().open("databases/quizdatabase.db"));
 
-            BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(
-                    new File("/data/data/" + getPackageName() +"/databases/" + TO_CHECK_QUIZ_DATABASE_NAME)));
+            BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(newDatabaseFile));
 
             int b;
 
@@ -266,6 +284,8 @@ public class QuizActivity extends AppCompatActivity {
 
             inputStream.close();
             outputStream.close();
+
+            Log.e("QUIZ_ACT", "NEW DATABASE FILE COPIED");
 
         }
         catch (FileNotFoundException fnf){
@@ -279,8 +299,80 @@ public class QuizActivity extends AppCompatActivity {
         }
 
 
-    }
+        //access the old database
+        long oldDriversTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from drivers_table;", null);
+        long oldConstructorTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from constructors_table;", null);
+        long oldCircuitsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from circuits_table;", null);
+        long oldFiguresTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from figures_table;", null);
+        long oldCarsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from cars_table;", null);
+        long oldHelmetsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from helmets_table;", null);
 
+        Log.e("OLD QUIZ DRIVERS", oldDriversTableCount + "");
+        Log.e("OLD QUIZ CONSTRUCTORS", oldConstructorTableCount + "");
+        Log.e("OLD QUIZ CIRCUITS", oldCircuitsTableCount + "");
+        Log.e("OLD QUIZ FIGURES", oldFiguresTableCount + "");
+        Log.e("OLD QUIZ HELMETS", oldHelmetsTableCount + "");
+        Log.e("OLD QUIZ CARS", oldCarsTableCount + "");
+
+
+        //access the new database
+        SQLiteDatabase newDataBase = openOrCreateDatabase(TO_CHECK_QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
+
+        long newDriversTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from drivers_table;", null);
+        long newConstructorTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from constructors_table;", null);
+        long newCircuitsTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from circuits_table;", null);
+        long newFiguresTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from figures_table;", null);
+        long newCarsTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from cars_table;", null);
+        long newHelmetsTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from helmets_table;", null);
+
+        Log.e("NEW QUIZ DRIVERS", newDriversTableCount + "");
+        Log.e("NEW QUIZ CONSTRUCTORS", newConstructorTableCount + "");
+        Log.e("NEW QUIZ CIRCUITS", newCircuitsTableCount + "");
+        Log.e("NEW QUIZ FIGURES", newFiguresTableCount + "");
+        Log.e("NEW QUIZ HELMETS", newHelmetsTableCount + "");
+        Log.e("NEW QUIZ CARS", newCarsTableCount + "");
+
+
+
+        //compare and see if there is any update
+        Log.e("QUIZ_ACT", "COMPARING DATABASES");
+
+        if(newDriversTableCount > oldDriversTableCount
+                || newConstructorTableCount > oldConstructorTableCount
+                    || newCircuitsTableCount > oldCircuitsTableCount
+                        ||newFiguresTableCount > oldFiguresTableCount
+                            || newCarsTableCount > oldCarsTableCount
+                                || newHelmetsTableCount > oldHelmetsTableCount){
+
+
+            Log.e("DB UPDATE FOUND", "DB update found");
+
+            //the file in the assets folder is an update
+            //erase the old database file and return the new one
+
+            String oldDatabasePath = quizDatabase.getPath();
+            quizDatabase.close();
+
+            File oldDatabaseFile = new File(oldDatabasePath);
+
+            if(oldDatabaseFile.exists())
+                oldDatabaseFile.delete();
+
+            return newDataBase;
+
+        }
+        else {
+
+            //no updates found. Erase the new db file and return the existing one
+
+            if(newDatabaseFile != null && newDatabaseFile.exists())
+                newDatabaseFile.delete();
+
+            return quizDatabase;
+        }
+
+
+    }
 
 
 

@@ -20,24 +20,32 @@
            android:layout_width="match_parent"
            android:layout_height="match_parent">
 
-           <ImageView
+           <LinearLayout
                android:layout_width="wrap_content"
                android:layout_height="wrap_content"
-               android:src="@drawable/lotus79"
-               android:layout_centerInParent="true"
-               android:id="@+id/quiz_image_place"/>
+               android:orientation="vertical"
+               android:layout_centerInParent="true">
 
-           <android.support.v7.widget.AppCompatTextView
-               android:layout_width="match_parent"
-               android:layout_height="wrap_content"
-               android:layout_margin="2dp"
-               android:layout_below="@id/quiz_image_place"
-               android:gravity="center"
-               android:textAlignment="center"
-               android:textSize="@dimen/standard"
-               android:text="This is where the question comes in"
-               android:id="@+id/quiz_question_text"/>
+               <ImageView
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:src="@drawable/lotus79"
+                   android:layout_centerInParent="true"
+                   android:id="@+id/quiz_image_place"/>
 
+               <android.support.v7.widget.AppCompatTextView
+                   android:layout_width="match_parent"
+                   android:layout_height="wrap_content"
+                   android:layout_margin="2dp"
+                   android:layout_below="@id/quiz_image_place"
+                   android:gravity="center"
+                   android:textAlignment="center"
+                   android:textSize="@dimen/standard"
+                   android:text="This is where the question comes in"
+                   android:id="@+id/quiz_question_text"/>
+
+
+           </LinearLayout>
 
            <LinearLayout
                android:layout_width="wrap_content"
@@ -45,7 +53,7 @@
                android:layout_alignParentBottom="true"
                android:layout_alignParentRight="true"
                android:gravity="center"
-               android:visibility="gone"
+               android:visibility="invisible"
                android:id="@+id/more_info">
 
                <android.support.v7.widget.AppCompatImageView
