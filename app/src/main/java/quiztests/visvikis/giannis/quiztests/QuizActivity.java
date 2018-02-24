@@ -4,6 +4,8 @@ import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.InterstitialAd;
 
+import android.app.LoaderManager;
+import android.content.Loader;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
@@ -36,13 +38,14 @@ public class QuizActivity extends AppCompatActivity {
     private InterstitialAd mInterstitialAd;
 
 
-    private SQLiteDatabase quizDatabase;
-
     private final String INDEX_TAG = "INDEX_TAG";
     private final String QUIZ_DATABASE_NAME = "quiz_database.db";
     private final String TO_CHECK_QUIZ_DATABASE_NAME = "new_quiz_database.db";
 
     private final int QUIZ_LOADER_TASK_ID = 1;
+    private final int AD_LOADER_TASK_ID = 2;
+
+    private boolean quizStarted;
 
     //ArrayLists tags
     private final String CORRECT_ANSWERS_TAG = "CORRECT_ANSWERS";
@@ -53,6 +56,8 @@ public class QuizActivity extends AppCompatActivity {
     private final String INFO_LINKS_TAG = "INFO_LINKS";
     private final String FILE_PATHS_TAG = "FILE_PATHS";
     private  final String HOW_MANY_CORRECTS_TAG = "HOW_MANY_CORRECTS_SO_FAR";
+
+    private final String QUIZ_STARTED_TAG = "QUIZ_STARTED";
 
     private final int totalQuestions = 15;
 
@@ -90,11 +95,13 @@ public class QuizActivity extends AppCompatActivity {
 
         AppCompatButton answerButton4 = findViewById(R.id.answer_button_4);
 
-        quizDatabase = openOrCreateDatabase(QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
 
 
         if(savedInstanceState != null){
+
             //retrieve state
+
+            quizStarted = savedInstanceState.getBoolean(QUIZ_STARTED_TAG);
 
             questionIndex = savedInstanceState.getInt(INDEX_TAG);
             correctAnswers = savedInstanceState.getInt(HOW_MANY_CORRECTS_TAG);
@@ -109,27 +116,26 @@ public class QuizActivity extends AppCompatActivity {
 
         }
         else {
+
+            quizStarted = false;
             questionIndex = 0;
             correctAnswers = 0;
 
-            //TODO CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING
-            prepareTheQuizDatabase();
-
-
-            //TODO when the task loader is finished, take each QuizQuestion object and fill in the ArrayLists
-
-            DO WORK HERE
+            //CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING AND LOAD THE QUIZ
+            checkForUpdates();
 
         }
 
 
+        if(!quizStarted)
+            initiateNewQuiz();
 
         // Create the InterstitialAd and set the adUnitId (defined in values/strings.xml).
-        mInterstitialAd = newInterstitialAd();
         loadInterstitial();
 
 
     }
+
 
 
     @Override
@@ -148,6 +154,8 @@ public class QuizActivity extends AppCompatActivity {
         outState.putStringArrayList(FALSE_ANSWERS_1_TAG, falseAnswersList1);
         outState.putStringArrayList(FALSE_ANSWERS_2_TAG, falseAnswersList2);
         outState.putStringArrayList(FALSE_ANSWERS_3_TAG, falseAnswersList3);
+
+        outState.putBoolean(QUIZ_STARTED_TAG, quizStarted);
 
     }
 
@@ -178,36 +186,6 @@ public class QuizActivity extends AppCompatActivity {
 
 
 
-    private InterstitialAd newInterstitialAd() {
-
-        InterstitialAd interstitialAd = new InterstitialAd(this);
-        interstitialAd.setAdUnitId(getString(R.string.interstitial_ad_unit_id));
-        interstitialAd.setAdListener(new AdListener() {
-            @Override
-            public void onAdLoaded() {
-
-                Toast.makeText(getApplicationContext(), "Ad Loaded", Toast.LENGTH_SHORT).show();
-
-            }
-
-
-            @Override
-            public void onAdFailedToLoad(int errorCode) {
-
-                Toast.makeText(getApplicationContext(), "Add Failed to load", Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onAdClosed() {
-
-                Toast.makeText(getApplicationContext(), "Ad was closed", Toast.LENGTH_LONG).show();
-            }
-
-        });
-
-        return interstitialAd;
-    }
-
 
 
     private void showInterstitial() {
@@ -224,32 +202,67 @@ public class QuizActivity extends AppCompatActivity {
 
     private void loadInterstitial() {
         //Initialize and load the ad.
-        mInterstitialAd = newInterstitialAd();
 
-        AdRequest adRequest = new AdRequest.Builder()
-                .setRequestAgent("android_studio:ad_template").build();
-        mInterstitialAd.loadAd(adRequest);
-    }
+        getSupportLoaderManager().initLoader(AD_LOADER_TASK_ID, null,
+                            new android.support.v4.app.LoaderManager.LoaderCallbacks<InterstitialAd>() {
+                                @Override
+                                public android.support.v4.content.Loader<InterstitialAd> onCreateLoader(int id, Bundle args) {
+                                    return new InterstitialAdLoader(getApplicationContext());
+                                }
 
+                                @Override
+                                public void onLoadFinished(android.support.v4.content.Loader<InterstitialAd> loader, InterstitialAd data) {
+                                    mInterstitialAd = data;
 
+                                }
 
+                                @Override
+                                public void onLoaderReset(android.support.v4.content.Loader<InterstitialAd> loader) {
 
+                                }
+                            });
 
-    private void initiateNewQuiz(){
 
     }
 
 
     /**
-     * Calls for a check in the quiz database for any updates or to create it if the database does not exist
-     * and then call to initiates the AsyncTaskHolder to set up the quiz
+     *
+     * Called after the database check is performed. Triggers the AsyncTaskLoader that accesses the database picking random questions
+     *
      */
-    private void prepareTheQuizDatabase(){
+    private void initiateNewQuiz(){
 
-        quizDatabase = checkForUpdates();
+        getSupportLoaderManager().initLoader(QUIZ_LOADER_TASK_ID, null,
+                new android.support.v4.app.LoaderManager.LoaderCallbacks<ArrayList<QuizQuestion>>() {
+                    @Override
+                    public android.support.v4.content.Loader<ArrayList<QuizQuestion>> onCreateLoader(int id, Bundle args) {
+                        return new FeedTheQuizTaskLoader(getApplicationContext(), QUIZ_DATABASE_NAME);
+                    }
 
-        initiateNewQuiz();
+                    @Override
+                    public void onLoadFinished(android.support.v4.content.Loader<ArrayList<QuizQuestion>> loader, ArrayList<QuizQuestion> data) {
+
+
+                        quizStarted = true;
+
+
+                        SET UP THE LISTS FROM THE data
+
+                    }
+
+                    @Override
+                    public void onLoaderReset(android.support.v4.content.Loader<ArrayList<QuizQuestion>> loader) {
+
+                    }
+                });
+
+
     }
+
+
+
+
 
 
     /**
@@ -258,7 +271,7 @@ public class QuizActivity extends AppCompatActivity {
      * @return either the existing sqlite database or the updated one if exists
      *
      */
-    private SQLiteDatabase checkForUpdates(){
+    private void checkForUpdates(){
 
         //access the old database (or create it for the first time)
 
@@ -358,7 +371,6 @@ public class QuizActivity extends AppCompatActivity {
             if(oldDatabaseFile.exists())
                 oldDatabaseFile.delete();
 
-            return newDataBase;
 
         }
         else {
@@ -368,9 +380,11 @@ public class QuizActivity extends AppCompatActivity {
             if(newDatabaseFile != null && newDatabaseFile.exists())
                 newDatabaseFile.delete();
 
-            return quizDatabase;
         }
 
+
+        //check is done, now load the quiz questions
+        initiateNewQuiz();
 
     }
 

@@ -25,8 +25,6 @@ import java.util.Random;
 
 public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestion>> {
 
-
-    private Context context;
     private String quizDatabaseName;
 
 
@@ -34,8 +32,8 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
     public FeedTheQuizTaskLoader(Context context, String quizDatabaseName) {
         super(context);
 
-        this.context = context;
         this.quizDatabaseName = quizDatabaseName;
+
     }
 
 
@@ -48,7 +46,7 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
 
         ArrayList<QuizQuestion> quizQuestions = new ArrayList<>();
 
-        SQLiteDatabase quizDatabase = context.openOrCreateDatabase(quizDatabaseName, Context.MODE_PRIVATE, null);
+        SQLiteDatabase quizDatabase = getContext().openOrCreateDatabase(quizDatabaseName, Context.MODE_PRIVATE, null);
 
         //get one questions about helmets
         Cursor helmetsCursor = getRandomEntries(quizDatabase, "helmets_table", 2);
@@ -72,6 +70,7 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
 
         //get 10 questions about drivers
         Cursor driversCursor = getRandomEntries(quizDatabase, "drivers_table", 10);
+        addQuestions(quizQuestions, driversCursor);
 
         return quizQuestions;
 
