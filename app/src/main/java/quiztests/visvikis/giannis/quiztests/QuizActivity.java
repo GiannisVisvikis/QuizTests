@@ -28,6 +28,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.SQLInput;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 
 
 public class QuizActivity extends AppCompatActivity {
@@ -59,6 +61,8 @@ public class QuizActivity extends AppCompatActivity {
 
     private final String QUIZ_STARTED_TAG = "QUIZ_STARTED";
 
+    private final String CORRECT_PLACE_TAG = "CORRECT_PLACE";
+
     private final int totalQuestions = 15;
 
     private int correctAnswers;
@@ -73,6 +77,17 @@ public class QuizActivity extends AppCompatActivity {
     private ArrayList<String> falseAnswersList3;
 
 
+    private ImageView quizImage;
+    private AppCompatTextView quizQuestion;
+    private AppCompatButton answerButton1;
+    private AppCompatButton answerButton2;
+    private AppCompatButton answerButton3;
+    private AppCompatButton answerButton4;
+
+    private LinearLayout moreInfoLayout;
+
+    private HashMap<String, AppCompatButton> correctAnswerPlace;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,20 +95,23 @@ public class QuizActivity extends AppCompatActivity {
         setContentView(R.layout.quiz_activity);
 
 
+        correctAnswerPlace = new HashMap<>();
+
+
         //Get references to views
         ImageView quizImage = findViewById(R.id.ad_image_view);
 
-        AppCompatTextView quizQuestion = findViewById(R.id.quiz_question_text);
+        quizQuestion = findViewById(R.id.quiz_question_text);
 
-        LinearLayout moreInfoLayout = findViewById(R.id.more_info);
+        moreInfoLayout = findViewById(R.id.more_info);
 
-        AppCompatButton answerButton1 = findViewById(R.id.answer_button_1);
+        answerButton1 = findViewById(R.id.answer_button_1);
 
-        AppCompatButton answerButton2 = findViewById(R.id.answer_button_2);
+        answerButton2 = findViewById(R.id.answer_button_2);
 
-        AppCompatButton answerButton3 = findViewById(R.id.answer_button_3);
+        answerButton3 = findViewById(R.id.answer_button_3);
 
-        AppCompatButton answerButton4 = findViewById(R.id.answer_button_4);
+        answerButton4 = findViewById(R.id.answer_button_4);
 
 
 
@@ -114,6 +132,7 @@ public class QuizActivity extends AppCompatActivity {
             falseAnswersList2 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_2_TAG);
             falseAnswersList3 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_3_TAG);
 
+            setupTheQuiz();
         }
         else {
 
@@ -129,6 +148,7 @@ public class QuizActivity extends AppCompatActivity {
 
         if(!quizStarted)
             initiateNewQuiz();
+
 
         // Create the InterstitialAd and set the adUnitId (defined in values/strings.xml).
         loadInterstitial();
@@ -234,32 +254,90 @@ public class QuizActivity extends AppCompatActivity {
     private void initiateNewQuiz(){
 
         getSupportLoaderManager().initLoader(QUIZ_LOADER_TASK_ID, null,
-                new android.support.v4.app.LoaderManager.LoaderCallbacks<ArrayList<QuizQuestion>>() {
-                    @Override
-                    public android.support.v4.content.Loader<ArrayList<QuizQuestion>> onCreateLoader(int id, Bundle args) {
-                        return new FeedTheQuizTaskLoader(getApplicationContext(), QUIZ_DATABASE_NAME);
-                    }
+                                new android.support.v4.app.LoaderManager.LoaderCallbacks<ArrayList<QuizQuestion>>() {
+                                    @Override
+                                    public android.support.v4.content.Loader<ArrayList<QuizQuestion>> onCreateLoader(int id, Bundle args) {
+                                        return new FeedTheQuizTaskLoader(getApplicationContext(), QUIZ_DATABASE_NAME);
+                                    }
 
-                    @Override
-                    public void onLoadFinished(android.support.v4.content.Loader<ArrayList<QuizQuestion>> loader, ArrayList<QuizQuestion> data) {
-
-
-                        quizStarted = true;
+                                    @Override
+                                    public void onLoadFinished(android.support.v4.content.Loader<ArrayList<QuizQuestion>> loader, ArrayList<QuizQuestion> data) {
+                                        quizStarted = true;
 
 
-                        SET UP THE LISTS FROM THE data
+                                        for( QuizQuestion question : data){
 
-                    }
+                                            questionsList.add(question.getQuestion());
+                                            filePathsList.add(question.getAssetPath());
+                                            infoLinksList.add(question.getLink());
+                                            correctAnswersList.add(question.getCorrectAnswer());
+                                            falseAnswersList1.add(question.getWrongAnswer1());
+                                            falseAnswersList2.add(question.getWrongAnswer2());
+                                            falseAnswersList3.add(question.getWrongAnswer3());
 
-                    @Override
-                    public void onLoaderReset(android.support.v4.content.Loader<ArrayList<QuizQuestion>> loader) {
+                                            setupTheQuiz();
+                                        }
 
-                    }
-                });
+                                    }
+
+                                    @Override
+                                    public void onLoaderReset(android.support.v4.content.Loader<ArrayList<QuizQuestion>> loader) {
+
+                                    }
+                                });
 
 
     }
 
+
+
+
+    /**
+     * Either set the quiz up for the first time, or restore it after an orientation change, or setup the next question.
+     * Depends on the value of questionIndex
+     */
+    private void setupTheQuiz() {
+
+        AppCompatButton[] buttons = new AppCompatButton[]{answerButton1, answerButton2, answerButton3, answerButton4};
+
+        //select a button at random, remember which was it and place the correct answer on it
+        Random random = new Random();
+        int correctAnswerIndex = random.nextInt(buttons.length);
+        AppCompatButton chosenButton = buttons[correctAnswerIndex];
+        correctAnswerPlace.put(CORRECT_PLACE_TAG, chosenButton);
+        chosenButton.setText(correctAnswersList.get(questionIndex));
+
+        //put the false answers on the other buttons
+        ArrayList<AppCompatButton> notChosenButtons = new ArrayList<>();
+        ArrayList[] wrongAnswers = new ArrayList[]{falseAnswersList1, falseAnswersList2, falseAnswersList3};
+
+        //collect all buttons that do not have the right answer
+        for(AppCompatButton button : buttons){
+            if (button != correctAnswerPlace.get(CORRECT_PLACE_TAG)) //if it is not the one that contains the correct answer
+                notChosenButtons.add(button);
+        }
+
+
+        //not chosen buttons and wrongAnswers must have the same length
+
+        for (int falseIndex=0; falseIndex<wrongAnswers.length; falseIndex++){
+
+            AppCompatButton notChosenButton = notChosenButtons.get(falseIndex);
+            ArrayList<String> falseAnswersList = wrongAnswers[falseIndex];
+            String falseAnswer = falseAnswersList.get(questionIndex);
+            notChosenButton.setText(falseAnswer);
+
+        }
+
+
+        //set up the link
+        String link = infoLinksList.get(questionIndex);
+
+
+
+
+        //the quizIndex will be incremented with every answer inside an onClickListener
+    }
 
 
 
@@ -381,10 +459,7 @@ public class QuizActivity extends AppCompatActivity {
                 newDatabaseFile.delete();
 
         }
-
-
-        //check is done, now load the quiz questions
-        initiateNewQuiz();
+        
 
     }
 

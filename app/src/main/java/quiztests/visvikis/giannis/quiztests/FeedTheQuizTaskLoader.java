@@ -1,10 +1,11 @@
 package quiztests.visvikis.giannis.quiztests;
 
-import android.content.AsyncTaskLoader;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.support.v4.content.AsyncTaskLoader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
