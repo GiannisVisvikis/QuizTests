@@ -50,23 +50,23 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
         SQLiteDatabase quizDatabase = getContext().openOrCreateDatabase(quizDatabaseName, Context.MODE_PRIVATE, null);
 
         //get one questions about helmets
-        Cursor helmetsCursor = getRandomEntries(quizDatabase, "helmets_table", 2);
+        Cursor helmetsCursor = getRandomEntries(quizDatabase, "helmets_table", 1);
         addQuestions(quizQuestions, helmetsCursor);
 
         //get one questions about figures
-        Cursor figuresCursor = getRandomEntries(quizDatabase, "figures_table", 2);
+        Cursor figuresCursor = getRandomEntries(quizDatabase, "figures_table", 1);
         addQuestions(quizQuestions, figuresCursor);
 
         //get one questions about cars
-        Cursor carsCursor = getRandomEntries(quizDatabase, "cars_table", 2);
+        Cursor carsCursor = getRandomEntries(quizDatabase, "cars_table", 1);
         addQuestions(quizQuestions, carsCursor);
 
         //get one question about circuits
-        Cursor circuitsCursor = getRandomEntries(quizDatabase, "circuits_table", 2);
+        Cursor circuitsCursor = getRandomEntries(quizDatabase, "circuits_table", 1);
         addQuestions(quizQuestions, circuitsCursor);
 
         //get one question about constructors
-        Cursor constructorsCursor = getRandomEntries(quizDatabase, "constructors_table", 2);
+        Cursor constructorsCursor = getRandomEntries(quizDatabase, "constructors_table", 1);
         addQuestions(quizQuestions, constructorsCursor);
 
         //get 10 questions about drivers

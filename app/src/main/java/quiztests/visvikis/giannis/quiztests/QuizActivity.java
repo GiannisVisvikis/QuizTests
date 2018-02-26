@@ -1,21 +1,25 @@
 package quiztests.visvikis.giannis.quiztests;
 
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.AdRequest;
+
 import com.google.android.gms.ads.InterstitialAd;
 
-import android.app.LoaderManager;
-import android.content.Loader;
-import android.database.Cursor;
+import android.content.Intent;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatTextView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -26,7 +30,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.SQLInput;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
@@ -41,11 +44,14 @@ public class QuizActivity extends AppCompatActivity {
 
 
     private final String INDEX_TAG = "INDEX_TAG";
+
+
     private final String QUIZ_DATABASE_NAME = "quiz_database.db";
     private final String TO_CHECK_QUIZ_DATABASE_NAME = "new_quiz_database.db";
 
     private final int QUIZ_LOADER_TASK_ID = 1;
     private final int AD_LOADER_TASK_ID = 2;
+    private final int IMAGE_LOADER_TASK_ID = 3;
 
     private boolean quizStarted;
 
@@ -57,7 +63,7 @@ public class QuizActivity extends AppCompatActivity {
     private final String QUESTIONS_TAG = "QUESTIONS";
     private final String INFO_LINKS_TAG = "INFO_LINKS";
     private final String FILE_PATHS_TAG = "FILE_PATHS";
-    private  final String HOW_MANY_CORRECTS_TAG = "HOW_MANY_CORRECTS_SO_FAR";
+    private final String HOW_MANY_CORRECTS_TAG = "HOW_MANY_CORRECTS_SO_FAR";
 
     private final String QUIZ_STARTED_TAG = "QUIZ_STARTED";
 
@@ -79,6 +85,7 @@ public class QuizActivity extends AppCompatActivity {
 
     private ImageView quizImage;
     private AppCompatTextView quizQuestion;
+    private AppCompatTextView quizCounterTxt;
     private AppCompatButton answerButton1;
     private AppCompatButton answerButton2;
     private AppCompatButton answerButton3;
@@ -102,6 +109,8 @@ public class QuizActivity extends AppCompatActivity {
         ImageView quizImage = findViewById(R.id.ad_image_view);
 
         quizQuestion = findViewById(R.id.quiz_question_text);
+
+        quizCounterTxt = findViewById(R.id.counter_textview);
 
         moreInfoLayout = findViewById(R.id.more_info);
 
@@ -146,13 +155,15 @@ public class QuizActivity extends AppCompatActivity {
         }
 
 
-        if(!quizStarted)
-            initiateNewQuiz();
-
 
         // Create the InterstitialAd and set the adUnitId (defined in values/strings.xml).
         loadInterstitial();
 
+        if(!quizStarted)
+            initiateNewQuiz();
+
+
+        read and make a navigate back button
 
     }
 
@@ -291,9 +302,9 @@ public class QuizActivity extends AppCompatActivity {
 
 
 
-
     /**
-     * Either set the quiz up for the first time, or restore it after an orientation change, or setup the next question.
+     * Either set the quiz up for the first question, or restore it after an orientation change to the prior ,
+     * or setup the next question after an answer.
      * Depends on the value of questionIndex
      */
     private void setupTheQuiz() {
@@ -303,9 +314,33 @@ public class QuizActivity extends AppCompatActivity {
         //select a button at random, remember which was it and place the correct answer on it
         Random random = new Random();
         int correctAnswerIndex = random.nextInt(buttons.length);
-        AppCompatButton chosenButton = buttons[correctAnswerIndex];
+        final AppCompatButton chosenButton = buttons[correctAnswerIndex];
         correctAnswerPlace.put(CORRECT_PLACE_TAG, chosenButton);
         chosenButton.setText(correctAnswersList.get(questionIndex));
+        chosenButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                chosenButton.setBackgroundColor(Color.GREEN);
+                correctAnswers ++;
+
+                try{
+                    Thread.sleep(2000);
+                }
+                catch (InterruptedException ie){
+                    Log.e("INTERRUPTED_EXC", ie.getMessage());
+                }
+
+                if(questionIndex < totalQuestions - 1) {
+                    questionIndex++;
+                    setupTheQuiz();
+                }
+                else{
+                    make a dialog for restart or quit
+                }
+
+            }
+        });
+
 
         //put the false answers on the other buttons
         ArrayList<AppCompatButton> notChosenButtons = new ArrayList<>();
@@ -319,24 +354,73 @@ public class QuizActivity extends AppCompatActivity {
 
 
         //not chosen buttons and wrongAnswers must have the same length
-
         for (int falseIndex=0; falseIndex<wrongAnswers.length; falseIndex++){
 
-            AppCompatButton notChosenButton = notChosenButtons.get(falseIndex);
+            final AppCompatButton notChosenButton = notChosenButtons.get(falseIndex);
             ArrayList<String> falseAnswersList = wrongAnswers[falseIndex];
             String falseAnswer = falseAnswersList.get(questionIndex);
             notChosenButton.setText(falseAnswer);
 
+            notChosenButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    notChosenButton.setBackgroundColor(Color.RED);
+                    moreInfoLayout.setVisibility(View.VISIBLE);
+
+                    if(questionIndex < totalQuestions - 1) {
+                        make a button in order to procceed to the next question
+                        increase the index and call the setup again
+                    }
+                    else {
+                        make a dialog for restart or quit quiz
+                    }
+                }
+            });
         }
 
 
+
+        //setUp the Loader for the question Image
+        getSupportLoaderManager().initLoader(IMAGE_LOADER_TASK_ID, null, new LoaderManager.LoaderCallbacks<Bitmap>() {
+            @Override
+            public Loader<Bitmap> onCreateLoader(int id, Bundle args) {
+
+                String pathToImage = filePathsList.get(questionIndex);
+                return new QuizImageLoader(getApplicationContext(), pathToImage);
+            }
+
+            @Override
+            public void onLoadFinished(Loader<Bitmap> loader, Bitmap data) {
+                quizImage.setImageBitmap(data);
+            }
+
+            @Override
+            public void onLoaderReset(Loader<Bitmap> loader) {
+
+            }
+        });
+
+
+
+        //setup the question
+        quizQuestion.setText(questionsList.get(questionIndex));
+
+        //setup the counter over the image
+        quizCounterTxt.setText(questionIndex + 1 + "/" + totalQuestions);
+
         //set up the link
-        String link = infoLinksList.get(questionIndex);
+        moreInfoLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String link = infoLinksList.get(questionIndex);
+                Intent moreInfoIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
+                startActivity(moreInfoIntent);
+            }
+        });
 
 
 
-
-        //the quizIndex will be incremented with every answer inside an onClickListener
+        //the quizIndex is incremented with every answer inside an onClickListener
     }
 
 
@@ -361,7 +445,7 @@ public class QuizActivity extends AppCompatActivity {
 
         try{
 
-            BufferedInputStream inputStream = new BufferedInputStream(getAssets().open("databases/quizdatabase.db"));
+            BufferedInputStream inputStream = new BufferedInputStream(getAssets().open("databases/the_quiz.db"));
 
             BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(newDatabaseFile));
 
@@ -390,13 +474,33 @@ public class QuizActivity extends AppCompatActivity {
         }
 
 
-        //access the old database
-        long oldDriversTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from drivers_table;", null);
-        long oldConstructorTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from constructors_table;", null);
-        long oldCircuitsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from circuits_table;", null);
-        long oldFiguresTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from figures_table;", null);
-        long oldCarsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from cars_table;", null);
-        long oldHelmetsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from helmets_table;", null);
+        long oldDatabaseTables = DatabaseUtils.longForQuery(quizDatabase, "select count(name) from sqlite_master where type = ?", new String[]{"table"});
+
+
+        long oldDriversTableCount, oldConstructorTableCount, oldCircuitsTableCount, oldFiguresTableCount,
+                oldHelmetsTableCount, oldCarsTableCount;
+
+
+        if(oldDatabaseTables > 1){ //there is always at least one upon creation
+
+           //access the old database
+           oldDriversTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from drivers_table;", null);
+           oldConstructorTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from constructors_table;", null);
+           oldCircuitsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from circuits_table;", null);
+           oldFiguresTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from figures_table;", null);
+           oldCarsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from cars_table;", null);
+           oldHelmetsTableCount = DatabaseUtils.longForQuery(quizDatabase, "select count(*) from helmets_table;", null);
+
+        }
+        else {
+
+            oldDriversTableCount = 0;
+            oldConstructorTableCount = 0;
+            oldCircuitsTableCount = 0;
+            oldFiguresTableCount = 0;
+            oldHelmetsTableCount = 0;
+            oldCarsTableCount = 0;
+        }
 
         Log.e("OLD QUIZ DRIVERS", oldDriversTableCount + "");
         Log.e("OLD QUIZ CONSTRUCTORS", oldConstructorTableCount + "");
@@ -406,7 +510,7 @@ public class QuizActivity extends AppCompatActivity {
         Log.e("OLD QUIZ CARS", oldCarsTableCount + "");
 
 
-        //access the new database
+        //access the new database that was created
         SQLiteDatabase newDataBase = openOrCreateDatabase(TO_CHECK_QUIZ_DATABASE_NAME, MODE_PRIVATE, null);
 
         long newDriversTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from drivers_table;", null);
@@ -441,22 +545,29 @@ public class QuizActivity extends AppCompatActivity {
             //the file in the assets folder is an update
             //erase the old database file and return the new one
 
-            String oldDatabasePath = quizDatabase.getPath();
             quizDatabase.close();
 
+            String oldDatabasePath = quizDatabase.getPath();
             File oldDatabaseFile = new File(oldDatabasePath);
 
-            if(oldDatabaseFile.exists())
+            if(oldDatabaseFile.exists()) {
                 oldDatabaseFile.delete();
-
+                Log.e("OLD_DATA", " Deleted " + oldDatabaseFile.getAbsolutePath());
+                //rename the file to the former
+                newDatabaseFile.renameTo(new File(oldDatabasePath));
+                Log.e("NEW_DATA", "New data renamed to " + newDatabaseFile.getAbsolutePath());
+            }
 
         }
         else {
 
             //no updates found. Erase the new db file and return the existing one
+            Log.e("NO _DB_UPDATE", "No DB update found in assets");
 
-            if(newDatabaseFile != null && newDatabaseFile.exists())
+            if(newDatabaseFile != null && newDatabaseFile.exists()) {
                 newDatabaseFile.delete();
+                Log.e("NEW_DATA", "New data deleted");
+            }
 
         }
         
