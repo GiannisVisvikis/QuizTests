@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.Random;
 
 
-public class QuizActivity extends AppCompatActivity {
+public class QuizActivity extends AppCompatActivity implements QuizCommunication{
     // Remove the below line after defining your own ad unit ID.
     private static final String TOAST_TEXT = "Test ads are being shown. "
             + "To show live ads, replace the ad unit ID in res/values/strings.xml with your own ad unit ID.";
@@ -91,7 +91,7 @@ public class QuizActivity extends AppCompatActivity {
     private AppCompatButton answerButton3;
     private AppCompatButton answerButton4;
 
-    private LinearLayout moreInfoLayout;
+    private LinearLayout moreInfoLayout, moreInfo, nextQuestion;
 
     private HashMap<String, AppCompatButton> correctAnswerPlace;
 
@@ -112,7 +112,11 @@ public class QuizActivity extends AppCompatActivity {
 
         quizCounterTxt = findViewById(R.id.counter_textview);
 
-        moreInfoLayout = findViewById(R.id.more_info);
+        moreInfoLayout = findViewById(R.id.more_info_layout);
+
+        moreInfo = findViewById(R.id.more_info);
+
+        nextQuestion = findViewById(R.id.next_question);
 
         answerButton1 = findViewById(R.id.answer_button_1);
 
@@ -146,8 +150,6 @@ public class QuizActivity extends AppCompatActivity {
         else {
 
             quizStarted = false;
-            questionIndex = 0;
-            correctAnswers = 0;
 
             //CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING AND LOAD THE QUIZ
             checkForUpdates();
@@ -155,15 +157,9 @@ public class QuizActivity extends AppCompatActivity {
         }
 
 
-
-        // Create the InterstitialAd and set the adUnitId (defined in values/strings.xml).
-        loadInterstitial();
-
         if(!quizStarted)
             initiateNewQuiz();
 
-
-        read and make a navigate back button
 
     }
 
@@ -218,7 +214,6 @@ public class QuizActivity extends AppCompatActivity {
 
 
 
-
     private void showInterstitial() {
         // Show the ad if it's ready. Otherwise toast and reload the ad.
         if (mInterstitialAd != null && mInterstitialAd.isLoaded()) {
@@ -228,6 +223,7 @@ public class QuizActivity extends AppCompatActivity {
             loadInterstitial();
         }
     }
+
 
 
 
@@ -257,12 +253,22 @@ public class QuizActivity extends AppCompatActivity {
     }
 
 
+
     /**
      *
      * Called after the database check is performed. Triggers the AsyncTaskLoader that accesses the database picking random questions
      *
      */
     private void initiateNewQuiz(){
+
+        if(!quizStarted) {
+            quizStarted = true;
+        }
+
+        questionIndex = 0;
+        correctAnswers = 0;
+
+        loadInterstitial();
 
         getSupportLoaderManager().initLoader(QUIZ_LOADER_TASK_ID, null,
                                 new android.support.v4.app.LoaderManager.LoaderCallbacks<ArrayList<QuizQuestion>>() {
@@ -302,12 +308,19 @@ public class QuizActivity extends AppCompatActivity {
 
 
 
+
     /**
      * Either set the quiz up for the first question, or restore it after an orientation change to the prior ,
      * or setup the next question after an answer.
      * Depends on the value of questionIndex
      */
     private void setupTheQuiz() {
+
+
+        if(questionIndex > 7) {
+            showInterstitial();
+        }
+
 
         AppCompatButton[] buttons = new AppCompatButton[]{answerButton1, answerButton2, answerButton3, answerButton4};
 
@@ -321,7 +334,7 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 chosenButton.setBackgroundColor(Color.GREEN);
-                correctAnswers ++;
+                correctAnswers++;
 
                 try{
                     Thread.sleep(2000);
@@ -335,7 +348,8 @@ public class QuizActivity extends AppCompatActivity {
                     setupTheQuiz();
                 }
                 else{
-                    make a dialog for restart or quit
+                    //Show results. Quit or restart
+                    showQuizDialog();
                 }
 
             }
@@ -367,13 +381,6 @@ public class QuizActivity extends AppCompatActivity {
                     notChosenButton.setBackgroundColor(Color.RED);
                     moreInfoLayout.setVisibility(View.VISIBLE);
 
-                    if(questionIndex < totalQuestions - 1) {
-                        make a button in order to procceed to the next question
-                        increase the index and call the setup again
-                    }
-                    else {
-                        make a dialog for restart or quit quiz
-                    }
                 }
             });
         }
@@ -408,8 +415,26 @@ public class QuizActivity extends AppCompatActivity {
         //setup the counter over the image
         quizCounterTxt.setText(questionIndex + 1 + "/" + totalQuestions);
 
+
+        nextQuestion.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                questionIndex++;
+
+                if(questionIndex < totalQuestions - 1) {
+                    setupTheQuiz();
+                }
+                else {
+                    showQuizDialog();
+                }
+
+            }
+        });
+
+
+
         //set up the link
-        moreInfoLayout.setOnClickListener(new View.OnClickListener() {
+        moreInfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String link = infoLinksList.get(questionIndex);
@@ -422,7 +447,6 @@ public class QuizActivity extends AppCompatActivity {
 
         //the quizIndex is incremented with every answer inside an onClickListener
     }
-
 
 
 
@@ -570,11 +594,29 @@ public class QuizActivity extends AppCompatActivity {
             }
 
         }
-        
 
     }
 
 
+    private void showQuizDialog() {
+
+        Bundle args = new Bundle();
+        args.putString(QuizCommunication.QUIZ_CORRECT_ANSWERS, Integer.toString(correctAnswers) + "/" + Integer.toString(totalQuestions));
+
+        QuizDialog quizDialog = new QuizDialog();
+        quizDialog.setArguments(args);
+        quizDialog.show(getSupportFragmentManager(), "QUIZ_DIALOG_TAG");
+
+    }
 
 
+    @Override
+    public void restartTheQuiz() {
+        initiateNewQuiz();
+    }
+
+    @Override
+    public void quitTheQuiz() {
+        QuizActivity.this.finish();
+    }
 }

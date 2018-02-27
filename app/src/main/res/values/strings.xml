@@ -9,7 +9,11 @@
     For more information, see https://support.google.com/admob/answer/3052638
 <!- -->
     <string name="interstitial_ad_unit_id">ca-app-pub-3940256099942544/1033173712</string>
-    <string name="more_info">More</string>
+    <string name="more_info">More Info</string>
+    <string name="restart_quiz">Restart</string>
+    <string name="correct"> correct</string>
+    <string name="quit_quiz">Quit</string>
+    <string name="next_question">Next Question</string>
 
 
 </resources>
