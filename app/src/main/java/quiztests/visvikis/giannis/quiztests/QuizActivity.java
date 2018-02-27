@@ -598,6 +598,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     }
 
 
+
     private void showQuizDialog() {
 
         Bundle args = new Bundle();
