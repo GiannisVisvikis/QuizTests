@@ -1,6 +1,8 @@
 package quiztests.visvikis.giannis.quiztests;
 
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.InterstitialAd;
 
 import android.content.Intent;
@@ -9,6 +11,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
@@ -106,7 +110,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
 
         //Get references to views
-        ImageView quizImage = findViewById(R.id.ad_image_view);
+        quizImage = findViewById(R.id.quiz_image_place);
 
         quizQuestion = findViewById(R.id.quiz_question_text);
 
@@ -146,19 +150,27 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             falseAnswersList3 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_3_TAG);
 
             setupTheQuiz();
+
         }
         else {
 
             quizStarted = false;
 
+            questionsList = new ArrayList<>();
+            filePathsList = new ArrayList<>();
+            infoLinksList = new ArrayList<>();
+            correctAnswersList = new ArrayList<>();
+            falseAnswersList1 = new ArrayList<>();
+            falseAnswersList2 = new ArrayList<>();
+            falseAnswersList3 = new ArrayList<>();
+
             //CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING AND LOAD THE QUIZ
             checkForUpdates();
-
         }
-
 
         if(!quizStarted)
             initiateNewQuiz();
+
 
 
     }
@@ -230,26 +242,37 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private void loadInterstitial() {
         //Initialize and load the ad.
 
-        getSupportLoaderManager().initLoader(AD_LOADER_TASK_ID, null,
-                            new android.support.v4.app.LoaderManager.LoaderCallbacks<InterstitialAd>() {
-                                @Override
-                                public android.support.v4.content.Loader<InterstitialAd> onCreateLoader(int id, Bundle args) {
-                                    return new InterstitialAdLoader(getApplicationContext());
-                                }
+        InterstitialAd interstitialAd = new InterstitialAd(getApplicationContext());
+        interstitialAd.setAdUnitId(getApplicationContext().getString(R.string.interstitial_ad_unit_id));
 
-                                @Override
-                                public void onLoadFinished(android.support.v4.content.Loader<InterstitialAd> loader, InterstitialAd data) {
-                                    mInterstitialAd = data;
+        AdRequest adRequest = new AdRequest.Builder()
+                .setRequestAgent("android_studio:ad_template").build();
 
-                                }
+        interstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdLoaded() {
 
-                                @Override
-                                public void onLoaderReset(android.support.v4.content.Loader<InterstitialAd> loader) {
+                Toast.makeText(getApplicationContext(), "Ad Loaded", Toast.LENGTH_SHORT).show();
 
-                                }
-                            });
+            }
 
 
+            @Override
+            public void onAdFailedToLoad(int errorCode) {
+
+                Toast.makeText(getApplicationContext(), "Add Failed to load", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onAdClosed() {
+
+                Toast.makeText(getApplicationContext(), "Ad was closed", Toast.LENGTH_LONG).show();
+            }
+
+        });
+
+        interstitialAd.loadAd(adRequest);
+        mInterstitialAd = interstitialAd;
     }
 
 
@@ -292,9 +315,17 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                                             falseAnswersList2.add(question.getWrongAnswer2());
                                             falseAnswersList3.add(question.getWrongAnswer3());
 
-                                            setupTheQuiz();
                                         }
 
+                                        Log.e("QUESTIONS", questionsList.size() + "");
+                                        Log.e("FILEPATHS", filePathsList.size() + "");
+                                        Log.e("LINKS", infoLinksList.size() + "");
+                                        Log.e("CORRECTS", correctAnswersList.size() + "");
+                                        Log.e("FALSES_1", falseAnswersList1.size() + "");
+                                        Log.e("FALSES_2", falseAnswersList2.size() + "");
+                                        Log.e("FALSES_3", falseAnswersList3.size() + "");
+
+                                        setupTheQuiz();
                                     }
 
                                     @Override
@@ -336,13 +367,13 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                 chosenButton.setBackgroundColor(Color.GREEN);
                 correctAnswers++;
 
-                try{
-                    Thread.sleep(2000);
+           /*     try{
+                    Thread.sleep(4000);
                 }
                 catch (InterruptedException ie){
                     Log.e("INTERRUPTED_EXC", ie.getMessage());
                 }
-
+*/
                 if(questionIndex < totalQuestions - 1) {
                     questionIndex++;
                     setupTheQuiz();
@@ -388,21 +419,22 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
 
         //setUp the Loader for the question Image
-        getSupportLoaderManager().initLoader(IMAGE_LOADER_TASK_ID, null, new LoaderManager.LoaderCallbacks<Bitmap>() {
+        getSupportLoaderManager().initLoader(IMAGE_LOADER_TASK_ID, null, new LoaderManager.LoaderCallbacks<Drawable>() {
             @Override
-            public Loader<Bitmap> onCreateLoader(int id, Bundle args) {
+            public Loader<Drawable> onCreateLoader(int id, Bundle args) {
 
                 String pathToImage = filePathsList.get(questionIndex);
                 return new QuizImageLoader(getApplicationContext(), pathToImage);
             }
 
             @Override
-            public void onLoadFinished(Loader<Bitmap> loader, Bitmap data) {
-                quizImage.setImageBitmap(data);
+            public void onLoadFinished(Loader<Drawable> loader, Drawable data) {
+                quizImage.setImageDrawable(null);
+                quizImage.setImageDrawable(data);
             }
 
             @Override
-            public void onLoaderReset(Loader<Bitmap> loader) {
+            public void onLoaderReset(Loader<Drawable> loader) {
 
             }
         });
@@ -469,7 +501,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
         try{
 
-            BufferedInputStream inputStream = new BufferedInputStream(getAssets().open("databases/the_quiz.db"));
+            BufferedInputStream inputStream = new BufferedInputStream(getAssets().open("databases/the_quiz_update.db"));
 
             BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(newDatabaseFile));
 
@@ -496,6 +528,18 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             Toast.makeText(this, "IOException, see log", Toast.LENGTH_SHORT).show();
             Log.e("QUIZ_ACT_COPY_DATABS", ioe.getMessage());
         }
+
+
+        //REMOVE AFTER DEBUG
+        //DEBUG get the final database name in the phone storage
+        File dataDir = new File("/data/data/" + getPackageName() + "/databases/");
+
+        dataDir.mkdir();
+
+        for(File dataFile : dataDir.listFiles()){
+            Log.e("INITIAL_DATΑ_NAME", dataFile.getName());
+        }
+
 
 
         long oldDatabaseTables = DatabaseUtils.longForQuery(quizDatabase, "select count(name) from sqlite_master where type = ?", new String[]{"table"});
@@ -578,8 +622,9 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                 oldDatabaseFile.delete();
                 Log.e("OLD_DATA", " Deleted " + oldDatabaseFile.getAbsolutePath());
                 //rename the file to the former
-                newDatabaseFile.renameTo(new File(oldDatabasePath));
+                Log.e("RENAMING NEW DATA FILE", newDatabaseFile.renameTo(new File(oldDatabasePath)) + "");
                 Log.e("NEW_DATA", "New data renamed to " + newDatabaseFile.getAbsolutePath());
+
             }
 
         }
@@ -593,6 +638,14 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                 Log.e("NEW_DATA", "New data deleted");
             }
 
+        }
+
+        //REMOVE AFTER DEBUG
+        //DEBUG get the final database name in the phone storage
+        dataDir.mkdir();
+
+        for(File dataFile : dataDir.listFiles()){
+            Log.e("FINAL_DATΑ_NAME", dataFile.getName());
         }
 
     }

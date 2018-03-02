@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.v4.content.AsyncTaskLoader;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +38,14 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
 
     }
 
+
+    @Override
+    protected void onStartLoading() {
+        super.onStartLoading();
+
+        forceLoad();
+
+    }
 
 
 
@@ -127,6 +136,7 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
         return quizDatabase.rawQuery("select link, photo_path, question, answer, false_1, false_2, false_3 from " + tableName + " where id in " + finalSelection, null);
 
     }
+
 
 
     /**

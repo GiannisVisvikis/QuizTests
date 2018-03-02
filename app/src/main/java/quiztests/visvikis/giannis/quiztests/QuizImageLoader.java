@@ -3,6 +3,8 @@ package quiztests.visvikis.giannis.quiztests;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.support.v4.content.AsyncTaskLoader;
 
 import java.io.IOException;
@@ -11,7 +13,7 @@ import java.io.IOException;
  * Created by ioannis on 26/2/2018.
  */
 
-public class QuizImageLoader extends AsyncTaskLoader<Bitmap> {
+public class QuizImageLoader extends AsyncTaskLoader<Drawable> {
 
     private String pathToImage;
 
@@ -24,9 +26,17 @@ public class QuizImageLoader extends AsyncTaskLoader<Bitmap> {
     }
 
 
+    @Override
+    protected void onStartLoading() {
+        super.onStartLoading();
+
+        forceLoad();
+    }
+
+
 
     @Override
-    public Bitmap loadInBackground() {
+    public Drawable loadInBackground() {
 
         Bitmap result;
 
@@ -37,7 +47,7 @@ public class QuizImageLoader extends AsyncTaskLoader<Bitmap> {
             result = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.quiz_unknown);
         }
 
-        return result;
+        return new BitmapDrawable(getContext().getResources(), result);
     }
 
 
