@@ -54,6 +54,9 @@ public class QuizDialog extends DialogFragment {
 
         View view = inflater.inflate(R.layout.quiz_dialog, container, false);
 
+        Dialog dialog = getDialog();
+
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         AppCompatTextView correctAnswersTxtView = view.findViewById(R.id.quiz_result_txt);
         correctAnswersTxtView.setText(correctAnswers + getString(R.string.correct));
@@ -73,6 +76,7 @@ public class QuizDialog extends DialogFragment {
             @Override
             public void onClick(View view) {
                 communication.restartTheQuiz();
+                QuizDialog.this.dismiss();
             }
         });
 
@@ -81,10 +85,10 @@ public class QuizDialog extends DialogFragment {
     }
 
 
+
     @Override
     public void onStart() {
         super.onStart();
-
 
         Dialog dialog = getDialog();
 
@@ -108,7 +112,6 @@ public class QuizDialog extends DialogFragment {
         }
 
         dialog.getWindow().setLayout(newWidth, newHeight);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
     }
 

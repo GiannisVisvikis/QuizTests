@@ -8,10 +8,8 @@ import com.google.android.gms.ads.InterstitialAd;
 import android.content.Intent;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Bitmap;
 
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,11 +42,12 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private static final String TOAST_TEXT = "Test ads are being shown. "
             + "To show live ads, replace the ad unit ID in res/values/strings.xml with your own ad unit ID.";
 
+
     private InterstitialAd mInterstitialAd;
 
 
     private final String INDEX_TAG = "INDEX_TAG";
-
+    private final String AD_SHOWED_TAG = "AD_SHOWED";
 
     private final String QUIZ_DATABASE_NAME = "quiz_database.db";
     private final String TO_CHECK_QUIZ_DATABASE_NAME = "new_quiz_database.db";
@@ -77,6 +76,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
     private int correctAnswers;
     private int questionIndex;
+
+    private boolean adShowed;
 
     private ArrayList<String> questionsList;
     private ArrayList<String> filePathsList;
@@ -149,6 +150,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             falseAnswersList2 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_2_TAG);
             falseAnswersList3 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_3_TAG);
 
+            adShowed = savedInstanceState.getBoolean(AD_SHOWED_TAG);
             setupTheQuiz();
 
         }
@@ -163,6 +165,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             falseAnswersList1 = new ArrayList<>();
             falseAnswersList2 = new ArrayList<>();
             falseAnswersList3 = new ArrayList<>();
+
+            adShowed = false;
 
             //CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING AND LOAD THE QUIZ
             checkForUpdates();
@@ -196,6 +200,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
         outState.putBoolean(QUIZ_STARTED_TAG, quizStarted);
 
+        outState.putBoolean(AD_SHOWED_TAG, adShowed);
     }
 
 
@@ -229,6 +234,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private void showInterstitial() {
         // Show the ad if it's ready. Otherwise toast and reload the ad.
         if (mInterstitialAd != null && mInterstitialAd.isLoaded()) {
+            adShowed = true;
             mInterstitialAd.show();
         } else {
             Toast.makeText(this, "Ad did not load", Toast.LENGTH_SHORT).show();
@@ -283,6 +289,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
      *
      */
     private void initiateNewQuiz(){
+
+        Toast.makeText(getApplicationContext(), "inside initiateNewQuiz", Toast.LENGTH_SHORT).show();
 
         if(!quizStarted) {
             quizStarted = true;
@@ -348,138 +356,179 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private void setupTheQuiz() {
 
 
-        if(questionIndex > 7) {
-            showInterstitial();
-        }
+       if(questionIndex < totalQuestions -1){
+
+           if(questionIndex > 7 && !adShowed) {
+               showInterstitial();
+           }
 
 
-        AppCompatButton[] buttons = new AppCompatButton[]{answerButton1, answerButton2, answerButton3, answerButton4};
-
-        //select a button at random, remember which was it and place the correct answer on it
-        Random random = new Random();
-        int correctAnswerIndex = random.nextInt(buttons.length);
-        final AppCompatButton chosenButton = buttons[correctAnswerIndex];
-        correctAnswerPlace.put(CORRECT_PLACE_TAG, chosenButton);
-        chosenButton.setText(correctAnswersList.get(questionIndex));
-        chosenButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                chosenButton.setBackgroundColor(Color.GREEN);
-                correctAnswers++;
-
-           /*     try{
-                    Thread.sleep(4000);
-                }
-                catch (InterruptedException ie){
-                    Log.e("INTERRUPTED_EXC", ie.getMessage());
-                }
-*/
-                if(questionIndex < totalQuestions - 1) {
-                    questionIndex++;
-                    setupTheQuiz();
-                }
-                else{
-                    //Show results. Quit or restart
-                    showQuizDialog();
-                }
-
-            }
-        });
+           //disable options for user (may me revealed from a previous incorrect answer)
+           disableOptions();
 
 
-        //put the false answers on the other buttons
-        ArrayList<AppCompatButton> notChosenButtons = new ArrayList<>();
-        ArrayList[] wrongAnswers = new ArrayList[]{falseAnswersList1, falseAnswersList2, falseAnswersList3};
+           //setUp the Loader for the question Image
+           getSupportLoaderManager().initLoader(IMAGE_LOADER_TASK_ID, null, new LoaderManager.LoaderCallbacks<Drawable>() {
+               @Override
+               public Loader<Drawable> onCreateLoader(int id, Bundle args) {
 
-        //collect all buttons that do not have the right answer
-        for(AppCompatButton button : buttons){
-            if (button != correctAnswerPlace.get(CORRECT_PLACE_TAG)) //if it is not the one that contains the correct answer
-                notChosenButtons.add(button);
-        }
+                   String pathToImage = filePathsList.get(questionIndex);
+                   return new QuizImageLoader(getApplicationContext(), pathToImage);
+               }
 
+               @Override
+               public void onLoadFinished(Loader<Drawable> loader, Drawable data) {
 
-        //not chosen buttons and wrongAnswers must have the same length
-        for (int falseIndex=0; falseIndex<wrongAnswers.length; falseIndex++){
+                   quizImage.setImageDrawable(data);
 
-            final AppCompatButton notChosenButton = notChosenButtons.get(falseIndex);
-            ArrayList<String> falseAnswersList = wrongAnswers[falseIndex];
-            String falseAnswer = falseAnswersList.get(questionIndex);
-            notChosenButton.setText(falseAnswer);
+               }
 
-            notChosenButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    notChosenButton.setBackgroundColor(Color.RED);
-                    moreInfoLayout.setVisibility(View.VISIBLE);
+               @Override
+               public void onLoaderReset(Loader<Drawable> loader) {
 
-                }
-            });
-        }
+               }
+           });
 
+           //reset the button color to default (might be green or red from previous answer
+           answerButton1.setBackgroundResource(android.R.drawable.btn_default);
+           answerButton2.setBackgroundResource(android.R.drawable.btn_default);
+           answerButton3.setBackgroundResource(android.R.drawable.btn_default);
+           answerButton4.setBackgroundResource(android.R.drawable.btn_default);
 
+           AppCompatButton[] buttons = new AppCompatButton[]{answerButton1, answerButton2, answerButton3, answerButton4};
 
-        //setUp the Loader for the question Image
-        getSupportLoaderManager().initLoader(IMAGE_LOADER_TASK_ID, null, new LoaderManager.LoaderCallbacks<Drawable>() {
-            @Override
-            public Loader<Drawable> onCreateLoader(int id, Bundle args) {
+           //select a button at random, remember which was it and place the correct answer on it
+           Random random = new Random();
+           int correctAnswerIndex = random.nextInt(buttons.length);
+           final AppCompatButton chosenButton = buttons[correctAnswerIndex];
+           correctAnswerPlace.put(CORRECT_PLACE_TAG, chosenButton);
+           chosenButton.setText(correctAnswersList.get(questionIndex));
+           chosenButton.setOnClickListener(new View.OnClickListener() {
+               @Override
+               public void onClick(View view) {
+                   chosenButton.setBackgroundColor(Color.BLUE);
+                   correctAnswers++;
 
-                String pathToImage = filePathsList.get(questionIndex);
-                return new QuizImageLoader(getApplicationContext(), pathToImage);
-            }
+                   try{
+                       Thread.sleep(1000);
+                   }
+                   catch (InterruptedException ie){
+                       Log.e("INTERRUPTED_EXC", ie.getMessage());
+                   }
 
-            @Override
-            public void onLoadFinished(Loader<Drawable> loader, Drawable data) {
-                quizImage.setImageDrawable(null);
-                quizImage.setImageDrawable(data);
-            }
+                   if(questionIndex < totalQuestions - 1) {
+                       questionIndex++;
+                       setupTheQuiz();
+                   }
+                   else{
+                       //Show results. Quit or restart
+                       showQuizDialog();
+                   }
 
-            @Override
-            public void onLoaderReset(Loader<Drawable> loader) {
-
-            }
-        });
-
-
-
-        //setup the question
-        quizQuestion.setText(questionsList.get(questionIndex));
-
-        //setup the counter over the image
-        quizCounterTxt.setText(questionIndex + 1 + "/" + totalQuestions);
-
-
-        nextQuestion.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                questionIndex++;
-
-                if(questionIndex < totalQuestions - 1) {
-                    setupTheQuiz();
-                }
-                else {
-                    showQuizDialog();
-                }
-
-            }
-        });
+               }
+           });
 
 
+           //put the false answers on the other buttons
+           ArrayList<AppCompatButton> notChosenButtons = new ArrayList<>();
+           ArrayList[] wrongAnswers = new ArrayList[]{falseAnswersList1, falseAnswersList2, falseAnswersList3};
 
-        //set up the link
-        moreInfo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String link = infoLinksList.get(questionIndex);
-                Intent moreInfoIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
-                startActivity(moreInfoIntent);
-            }
-        });
+           //collect all buttons that do not have the right answer
+           for(AppCompatButton button : buttons){
+               if (button != correctAnswerPlace.get(CORRECT_PLACE_TAG)) //if it is not the one that contains the correct answer
+                   notChosenButtons.add(button);
+           }
+
+
+           //not chosen buttons and wrongAnswers must have the same length
+           for (int falseIndex=0; falseIndex<wrongAnswers.length; falseIndex++){
+
+               final AppCompatButton notChosenButton = notChosenButtons.get(falseIndex);
+               ArrayList<String> falseAnswersList = wrongAnswers[falseIndex];
+               String falseAnswer = falseAnswersList.get(questionIndex);
+               notChosenButton.setText(falseAnswer);
+
+               notChosenButton.setOnClickListener(new View.OnClickListener() {
+                   @Override
+                   public void onClick(View view) {
+
+                       notChosenButton.setBackgroundColor(Color.RED);
+
+                       //make Info and nextQuestion options available to user
+                       enableOptions();
+                   }
+               });
+           }
+
+
+           //setup the question
+           quizQuestion.setText(questionsList.get(questionIndex));
+
+           //setup the counter over the image
+           quizCounterTxt.setText(questionIndex + 1 + "/" + totalQuestions);
+
+
+           nextQuestion.setOnClickListener(new View.OnClickListener() {
+               @Override
+               public void onClick(View view) {
+
+                   if(questionIndex < totalQuestions - 1) {
+
+                       questionIndex++;
+                       setupTheQuiz();
+                   }
+                   else {
+                       showQuizDialog();
+                   }
+
+               }
+           });
+
+
+
+           //set up the link
+           moreInfo.setOnClickListener(new View.OnClickListener() {
+               @Override
+               public void onClick(View view) {
+
+                   String link = infoLinksList.get(questionIndex);
+
+                   //increment here otherwise get the link for the next question (you don't want that)
+                   if(questionIndex < totalQuestions - 1){
+                       questionIndex++;
+                   }
+
+                   Intent moreInfoIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
+                   startActivity(moreInfoIntent);
+
+               }
+           });
+
+       }
+       else{
+           showQuizDialog();
+       }
 
 
 
         //the quizIndex is incremented with every answer inside an onClickListener
     }
 
+
+
+
+    private void enableOptions(){
+        moreInfoLayout.setVisibility(View.VISIBLE);
+        moreInfo.setEnabled(true);
+        nextQuestion.setEnabled(true);
+    }
+
+
+    private void disableOptions(){
+        moreInfoLayout.setVisibility(View.INVISIBLE);
+        moreInfo.setEnabled(false);
+        nextQuestion.setEnabled(false);
+    }
 
 
 

@@ -40,8 +40,11 @@
                     android:id="@+id/counter_textview"/>
 
                 <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/colin_chapman"
+                    android:layout_weight="1"
+                    android:scaleType="center"
                     android:layout_gravity="center"
                     android:id="@+id/quiz_image_place"/>
 
