@@ -9,7 +9,6 @@ public interface QuizCommunication {
 
     public static final String QUIZ_CORRECT_ANSWERS = "QUIZ_CORRECT_ANSWERS";
 
-    public void restartTheQuiz();
 
     public void quitTheQuiz();
 

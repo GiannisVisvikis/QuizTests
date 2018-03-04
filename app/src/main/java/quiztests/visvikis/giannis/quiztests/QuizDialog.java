@@ -2,6 +2,7 @@ package quiztests.visvikis.giannis.quiztests;
 
 import android.app.Dialog;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -75,8 +76,14 @@ public class QuizDialog extends DialogFragment {
         restartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                communication.restartTheQuiz();
+
+                Intent restartQuizIntent = new Intent( getActivity(), QuizActivity.class );
+
+                communication.quitTheQuiz();
+
                 QuizDialog.this.dismiss();
+
+                startActivity(restartQuizIntent);
             }
         });
 

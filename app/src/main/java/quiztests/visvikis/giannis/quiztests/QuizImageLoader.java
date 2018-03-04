@@ -13,9 +13,12 @@ import java.io.IOException;
  * Created by ioannis on 26/2/2018.
  */
 
+
 public class QuizImageLoader extends AsyncTaskLoader<Drawable> {
 
     private String pathToImage;
+
+    private Drawable cachedData;
 
 
     public QuizImageLoader(Context context, String pathToImage) {
@@ -30,7 +33,11 @@ public class QuizImageLoader extends AsyncTaskLoader<Drawable> {
     protected void onStartLoading() {
         super.onStartLoading();
 
-        forceLoad();
+        if(cachedData == null)
+            forceLoad();
+        else
+            super.deliverResult(cachedData);
+
     }
 
 
@@ -50,6 +57,15 @@ public class QuizImageLoader extends AsyncTaskLoader<Drawable> {
         return new BitmapDrawable(getContext().getResources(), result);
     }
 
+
+    @Override
+    public void deliverResult(Drawable data) {
+
+        if(cachedData == null)
+            cachedData = data;
+
+        super.deliverResult(data);
+    }
 
 
 }

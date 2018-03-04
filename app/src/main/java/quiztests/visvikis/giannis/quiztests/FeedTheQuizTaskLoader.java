@@ -29,6 +29,9 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
 
     private String quizDatabaseName;
 
+    //store and not reload if done
+    private ArrayList<QuizQuestion> cachedData;
+
 
 
     public FeedTheQuizTaskLoader(Context context, String quizDatabaseName) {
@@ -42,8 +45,10 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
     @Override
     protected void onStartLoading() {
         super.onStartLoading();
-
-        forceLoad();
+        if(cachedData == null)
+            forceLoad();
+        else
+            super.deliverResult(cachedData);
 
     }
 
@@ -85,6 +90,19 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
         return quizQuestions;
 
     }
+
+
+
+    //store the data and use this instead of reloading again
+    @Override
+    public void deliverResult(ArrayList<QuizQuestion> data){
+
+        if(cachedData == null)
+            cachedData = data;
+
+        super.deliverResult(data);
+    }
+
 
 
 

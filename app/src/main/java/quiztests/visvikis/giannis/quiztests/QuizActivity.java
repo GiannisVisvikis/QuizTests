@@ -33,8 +33,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.Random;
+
 
 
 public class QuizActivity extends AppCompatActivity implements QuizCommunication{
@@ -52,9 +54,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private final String QUIZ_DATABASE_NAME = "quiz_database.db";
     private final String TO_CHECK_QUIZ_DATABASE_NAME = "new_quiz_database.db";
 
-    private final int QUIZ_LOADER_TASK_ID = 1;
-    private final int AD_LOADER_TASK_ID = 2;
-    private final int IMAGE_LOADER_TASK_ID = 3;
+    private int CURRENT_QUIZ_LOADER_TASK_ID = -100;
 
     private boolean quizStarted;
 
@@ -87,7 +87,6 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private ArrayList<String> falseAnswersList2;
     private ArrayList<String> falseAnswersList3;
 
-
     private ImageView quizImage;
     private AppCompatTextView quizQuestion;
     private AppCompatTextView quizCounterTxt;
@@ -106,6 +105,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         super.onCreate(savedInstanceState);
         setContentView(R.layout.quiz_activity);
 
+        Log.e("onCreate", "called");
 
         correctAnswerPlace = new HashMap<>();
 
@@ -151,20 +151,14 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             falseAnswersList3 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_3_TAG);
 
             adShowed = savedInstanceState.getBoolean(AD_SHOWED_TAG);
-            setupTheQuiz();
+
+            if(!quizStarted)
+                setupTheQuiz();
 
         }
         else {
 
             quizStarted = false;
-
-            questionsList = new ArrayList<>();
-            filePathsList = new ArrayList<>();
-            infoLinksList = new ArrayList<>();
-            correctAnswersList = new ArrayList<>();
-            falseAnswersList1 = new ArrayList<>();
-            falseAnswersList2 = new ArrayList<>();
-            falseAnswersList3 = new ArrayList<>();
 
             adShowed = false;
 
@@ -185,6 +179,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
+        Log.e("onSaveInstance", "Called");
 
         outState.putInt(INDEX_TAG,questionIndex);
         outState.putInt(HOW_MANY_CORRECTS_TAG,correctAnswers);
@@ -212,6 +207,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -290,7 +286,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
      */
     private void initiateNewQuiz(){
 
-        Toast.makeText(getApplicationContext(), "inside initiateNewQuiz", Toast.LENGTH_SHORT).show();
+        Log.e("INSIDE", "initiateNewQuiz");
 
         if(!quizStarted) {
             quizStarted = true;
@@ -299,20 +295,36 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         questionIndex = 0;
         correctAnswers = 0;
 
-        loadInterstitial();
+        if(mInterstitialAd == null || !mInterstitialAd.isLoaded()) {
+            loadInterstitial();
+        }
 
-        getSupportLoaderManager().initLoader(QUIZ_LOADER_TASK_ID, null,
+
+        getSupportLoaderManager().initLoader( CURRENT_QUIZ_LOADER_TASK_ID , null,
                                 new android.support.v4.app.LoaderManager.LoaderCallbacks<ArrayList<QuizQuestion>>() {
+
+
                                     @Override
                                     public android.support.v4.content.Loader<ArrayList<QuizQuestion>> onCreateLoader(int id, Bundle args) {
+
                                         return new FeedTheQuizTaskLoader(getApplicationContext(), QUIZ_DATABASE_NAME);
                                     }
 
+
+
                                     @Override
                                     public void onLoadFinished(android.support.v4.content.Loader<ArrayList<QuizQuestion>> loader, ArrayList<QuizQuestion> data) {
-                                        quizStarted = true;
 
+                                        //Initiate the lists that hold the quiz Info
+                                        questionsList = new ArrayList<>();
+                                        filePathsList = new ArrayList<>();
+                                        infoLinksList = new ArrayList<>();
+                                        correctAnswersList = new ArrayList<>();
+                                        falseAnswersList1 = new ArrayList<>();
+                                        falseAnswersList2 = new ArrayList<>();
+                                        falseAnswersList3 = new ArrayList<>();
 
+                                        //fill them
                                         for( QuizQuestion question : data){
 
                                             questionsList.add(question.getQuestion());
@@ -334,6 +346,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                                         Log.e("FALSES_3", falseAnswersList3.size() + "");
 
                                         setupTheQuiz();
+
+                                        Log.e("onLoadFinished", "Terminated");
                                     }
 
                                     @Override
@@ -356,7 +370,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private void setupTheQuiz() {
 
 
-       if(questionIndex < totalQuestions -1){
+       if(questionIndex < totalQuestions){
 
            if(questionIndex > 7 && !adShowed) {
                showInterstitial();
@@ -368,7 +382,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
 
            //setUp the Loader for the question Image
-           getSupportLoaderManager().initLoader(IMAGE_LOADER_TASK_ID, null, new LoaderManager.LoaderCallbacks<Drawable>() {
+           getSupportLoaderManager().initLoader(questionIndex, null, new LoaderManager.LoaderCallbacks<Drawable>() {
                @Override
                public Loader<Drawable> onCreateLoader(int id, Bundle args) {
 
@@ -395,6 +409,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
            answerButton3.setBackgroundResource(android.R.drawable.btn_default);
            answerButton4.setBackgroundResource(android.R.drawable.btn_default);
 
+           enableButtons();
+
            AppCompatButton[] buttons = new AppCompatButton[]{answerButton1, answerButton2, answerButton3, answerButton4};
 
            //select a button at random, remember which was it and place the correct answer on it
@@ -406,24 +422,20 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
            chosenButton.setOnClickListener(new View.OnClickListener() {
                @Override
                public void onClick(View view) {
-                   chosenButton.setBackgroundColor(Color.BLUE);
+                   chosenButton.setBackgroundColor(Color.GREEN);
                    correctAnswers++;
 
-                   try{
+                   questionIndex++;
+
+         /*          try{
                        Thread.sleep(1000);
                    }
                    catch (InterruptedException ie){
                        Log.e("INTERRUPTED_EXC", ie.getMessage());
                    }
+*/
 
-                   if(questionIndex < totalQuestions - 1) {
-                       questionIndex++;
-                       setupTheQuiz();
-                   }
-                   else{
-                       //Show results. Quit or restart
-                       showQuizDialog();
-                   }
+                   setupTheQuiz();
 
                }
            });
@@ -454,6 +466,11 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
                        notChosenButton.setBackgroundColor(Color.RED);
 
+                       //show correct answer
+                       chosenButton.setBackgroundColor(Color.GREEN);
+
+                       disableButtons();
+
                        //make Info and nextQuestion options available to user
                        enableOptions();
                    }
@@ -470,17 +487,9 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
            nextQuestion.setOnClickListener(new View.OnClickListener() {
                @Override
-               public void onClick(View view) {
-
-                   if(questionIndex < totalQuestions - 1) {
-
-                       questionIndex++;
-                       setupTheQuiz();
-                   }
-                   else {
-                       showQuizDialog();
-                   }
-
+               public void onClick(View view){
+                   questionIndex++;
+                    setupTheQuiz();
                }
            });
 
@@ -492,13 +501,9 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                public void onClick(View view) {
 
                    String link = infoLinksList.get(questionIndex);
+                   Intent moreInfoIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
 
                    //increment here otherwise get the link for the next question (you don't want that)
-                   if(questionIndex < totalQuestions - 1){
-                       questionIndex++;
-                   }
-
-                   Intent moreInfoIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
                    startActivity(moreInfoIntent);
 
                }
@@ -528,6 +533,23 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         moreInfoLayout.setVisibility(View.INVISIBLE);
         moreInfo.setEnabled(false);
         nextQuestion.setEnabled(false);
+    }
+
+
+    private void enableButtons(){
+        answerButton1.setEnabled(true);
+        answerButton2.setEnabled(true);
+        answerButton3.setEnabled(true);
+        answerButton4.setEnabled(true);
+    }
+
+
+
+    private void disableButtons(){
+        answerButton1.setEnabled(false);
+        answerButton2.setEnabled(false);
+        answerButton3.setEnabled(false);
+        answerButton4.setEnabled(false);
     }
 
 
@@ -578,6 +600,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             Log.e("QUIZ_ACT_COPY_DATABS", ioe.getMessage());
         }
 
+/*
 
         //REMOVE AFTER DEBUG
         //DEBUG get the final database name in the phone storage
@@ -589,6 +612,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             Log.e("INITIAL_DATΑ_NAME", dataFile.getName());
         }
 
+*/
 
 
         long oldDatabaseTables = DatabaseUtils.longForQuery(quizDatabase, "select count(name) from sqlite_master where type = ?", new String[]{"table"});
@@ -637,12 +661,15 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         long newCarsTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from cars_table;", null);
         long newHelmetsTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from helmets_table;", null);
 
+        /*
+
         Log.e("NEW QUIZ DRIVERS", newDriversTableCount + "");
         Log.e("NEW QUIZ CONSTRUCTORS", newConstructorTableCount + "");
         Log.e("NEW QUIZ CIRCUITS", newCircuitsTableCount + "");
         Log.e("NEW QUIZ FIGURES", newFiguresTableCount + "");
         Log.e("NEW QUIZ HELMETS", newHelmetsTableCount + "");
         Log.e("NEW QUIZ CARS", newCarsTableCount + "");
+*/
 
 
 
@@ -669,33 +696,41 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
             if(oldDatabaseFile.exists()) {
                 oldDatabaseFile.delete();
+
+                /*
                 Log.e("OLD_DATA", " Deleted " + oldDatabaseFile.getAbsolutePath());
                 //rename the file to the former
                 Log.e("RENAMING NEW DATA FILE", newDatabaseFile.renameTo(new File(oldDatabasePath)) + "");
                 Log.e("NEW_DATA", "New data renamed to " + newDatabaseFile.getAbsolutePath());
+*/
 
             }
 
         }
         else {
 
+/*
             //no updates found. Erase the new db file and return the existing one
             Log.e("NO _DB_UPDATE", "No DB update found in assets");
+*/
+
 
             if(newDatabaseFile != null && newDatabaseFile.exists()) {
                 newDatabaseFile.delete();
                 Log.e("NEW_DATA", "New data deleted");
             }
 
+
         }
 
-        //REMOVE AFTER DEBUG
+
+        /*        //REMOVE AFTER DEBUG
         //DEBUG get the final database name in the phone storage
         dataDir.mkdir();
 
         for(File dataFile : dataDir.listFiles()){
             Log.e("FINAL_DATΑ_NAME", dataFile.getName());
-        }
+        }*/
 
     }
 
@@ -712,11 +747,6 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
     }
 
-
-    @Override
-    public void restartTheQuiz() {
-        initiateNewQuiz();
-    }
 
     @Override
     public void quitTheQuiz() {
