@@ -152,8 +152,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
             adShowed = savedInstanceState.getBoolean(AD_SHOWED_TAG);
 
-            if(!quizStarted)
-                setupTheQuiz();
+            setupTheQuiz();
 
         }
         else {
@@ -600,7 +599,6 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             Log.e("QUIZ_ACT_COPY_DATABS", ioe.getMessage());
         }
 
-/*
 
         //REMOVE AFTER DEBUG
         //DEBUG get the final database name in the phone storage
@@ -612,7 +610,6 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             Log.e("INITIAL_DATΑ_NAME", dataFile.getName());
         }
 
-*/
 
 
         long oldDatabaseTables = DatabaseUtils.longForQuery(quizDatabase, "select count(name) from sqlite_master where type = ?", new String[]{"table"});
@@ -661,7 +658,6 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         long newCarsTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from cars_table;", null);
         long newHelmetsTableCount = DatabaseUtils.longForQuery(newDataBase, "select count(*) from helmets_table;", null);
 
-        /*
 
         Log.e("NEW QUIZ DRIVERS", newDriversTableCount + "");
         Log.e("NEW QUIZ CONSTRUCTORS", newConstructorTableCount + "");
@@ -669,7 +665,6 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         Log.e("NEW QUIZ FIGURES", newFiguresTableCount + "");
         Log.e("NEW QUIZ HELMETS", newHelmetsTableCount + "");
         Log.e("NEW QUIZ CARS", newCarsTableCount + "");
-*/
 
 
 
@@ -697,12 +692,11 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             if(oldDatabaseFile.exists()) {
                 oldDatabaseFile.delete();
 
-                /*
                 Log.e("OLD_DATA", " Deleted " + oldDatabaseFile.getAbsolutePath());
                 //rename the file to the former
-                Log.e("RENAMING NEW DATA FILE", newDatabaseFile.renameTo(new File(oldDatabasePath)) + "");
+                newDatabaseFile.renameTo(new File(oldDatabasePath));
+
                 Log.e("NEW_DATA", "New data renamed to " + newDatabaseFile.getAbsolutePath());
-*/
 
             }
 
