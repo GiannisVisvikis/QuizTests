@@ -44,7 +44,6 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private static final String TOAST_TEXT = "Test ads are being shown. "
             + "To show live ads, replace the ad unit ID in res/values/strings.xml with your own ad unit ID.";
 
-
     private InterstitialAd mInterstitialAd;
 
 
@@ -67,6 +66,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private final String INFO_LINKS_TAG = "INFO_LINKS";
     private final String FILE_PATHS_TAG = "FILE_PATHS";
     private final String HOW_MANY_CORRECTS_TAG = "HOW_MANY_CORRECTS_SO_FAR";
+    private final String ANSWERED_WRONG = "ANSWERED_WRONG";
+
 
     private final String QUIZ_STARTED_TAG = "QUIZ_STARTED";
 
@@ -78,6 +79,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
     private int questionIndex;
 
     private boolean adShowed;
+    //this will be kept in case user asnwers wrong and rotates the device, thus retarting the question and cheating
+    private boolean userAnsweredWrong;
 
     private ArrayList<String> questionsList;
     private ArrayList<String> filePathsList;
@@ -151,6 +154,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             falseAnswersList3 = savedInstanceState.getStringArrayList(FALSE_ANSWERS_3_TAG);
 
             adShowed = savedInstanceState.getBoolean(AD_SHOWED_TAG);
+            userAnsweredWrong = savedInstanceState.getBoolean(ANSWERED_WRONG);
 
             setupTheQuiz();
 
@@ -160,6 +164,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             quizStarted = false;
 
             adShowed = false;
+            userAnsweredWrong = false;
 
             //CHECK IF THE DATABASE IS CREATED. IF YES CHECK IF THERE ARE ANY UPDATES PENDING AND LOAD THE QUIZ
             checkForUpdates();
@@ -195,6 +200,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         outState.putBoolean(QUIZ_STARTED_TAG, quizStarted);
 
         outState.putBoolean(AD_SHOWED_TAG, adShowed);
+        outState.putBoolean(ANSWERED_WRONG, userAnsweredWrong);
     }
 
 
@@ -376,9 +382,13 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
            }
 
 
-           //disable options for user (may me revealed from a previous incorrect answer)
-           disableOptions();
-
+           //disable options for user if he answered correctly or pressed next question or don't do it if he answered wrong and changed orientation
+           if(userAnsweredWrong) {
+               enableOptions();
+           }
+           else {
+               disableOptions();
+           }
 
            //setUp the Loader for the question Image
            getSupportLoaderManager().initLoader(questionIndex, null, new LoaderManager.LoaderCallbacks<Drawable>() {
@@ -408,7 +418,13 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
            answerButton3.setBackgroundResource(android.R.drawable.btn_default);
            answerButton4.setBackgroundResource(android.R.drawable.btn_default);
 
-           enableButtons();
+           if(userAnsweredWrong){
+               disableButtons();
+           }
+           else {
+               enableButtons();
+           }
+
 
            AppCompatButton[] buttons = new AppCompatButton[]{answerButton1, answerButton2, answerButton3, answerButton4};
 
@@ -423,16 +439,15 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                public void onClick(View view) {
                    chosenButton.setBackgroundColor(Color.GREEN);
                    correctAnswers++;
-
+                   userAnsweredWrong = false;
                    questionIndex++;
 
-         /*          try{
-                       Thread.sleep(1000);
+                  try{
+                       Thread.sleep(200);
                    }
                    catch (InterruptedException ie){
                        Log.e("INTERRUPTED_EXC", ie.getMessage());
                    }
-*/
 
                    setupTheQuiz();
 
@@ -468,6 +483,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                        //show correct answer
                        chosenButton.setBackgroundColor(Color.GREEN);
 
+                       userAnsweredWrong = true;
+
                        disableButtons();
 
                        //make Info and nextQuestion options available to user
@@ -487,6 +504,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
            nextQuestion.setOnClickListener(new View.OnClickListener() {
                @Override
                public void onClick(View view){
+                   userAnsweredWrong = false;
                    questionIndex++;
                     setupTheQuiz();
                }
@@ -703,10 +721,8 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         }
         else {
 
-/*
             //no updates found. Erase the new db file and return the existing one
             Log.e("NO _DB_UPDATE", "No DB update found in assets");
-*/
 
 
             if(newDatabaseFile != null && newDatabaseFile.exists()) {
@@ -718,13 +734,13 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
         }
 
 
-        /*        //REMOVE AFTER DEBUG
+                //REMOVE AFTER DEBUG
         //DEBUG get the final database name in the phone storage
         dataDir.mkdir();
 
         for(File dataFile : dataDir.listFiles()){
             Log.e("FINAL_DATΑ_NAME", dataFile.getName());
-        }*/
+        }
 
     }
 

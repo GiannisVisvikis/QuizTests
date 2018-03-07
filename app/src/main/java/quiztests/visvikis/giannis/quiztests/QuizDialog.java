@@ -109,7 +109,7 @@ public class QuizDialog extends DialogFragment {
         if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
 
             newWidth =  widthPixels/2;
-            newHeight = 9 * (heightPixels/10);
+            newHeight = 7 * (heightPixels/10);
         }
         else{
 

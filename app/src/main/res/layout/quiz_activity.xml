@@ -19,107 +19,124 @@
         android:layout_marginLeft="1dp"
         android:layout_marginRight="1dp">
 
-       <LinearLayout
-           android:layout_width="match_parent"
-           android:layout_height="match_parent"
-           android:gravity="center"
-           android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical">
 
-           <LinearLayout
-               android:layout_width="match_parent"
-               android:layout_height="match_parent"
-               android:orientation="vertical"
-               android:layout_weight="1"
-               android:gravity="center">
-
-               <android.support.v7.widget.AppCompatTextView
-                   android:layout_width="match_parent"
-                   android:layout_height="wrap_content"
-                   android:textAlignment="center"
-                   android:text="1/15"
-                   android:textSize="@dimen/standard"
-                   android:id="@+id/counter_textview"/>
-
-               <ImageView
-                   android:layout_width="match_parent"
-                   android:layout_height="match_parent"
-                   android:layout_weight="1"
-                   android:scaleType="center"
-                   android:layout_gravity="center"
-                   android:src="@drawable/colin_chapman"
-                   android:id="@+id/quiz_image_place"/>
-
-               <android.support.v7.widget.AppCompatTextView
-                   android:layout_width="wrap_content"
-                   android:layout_height="wrap_content"
-                   android:layout_margin="2dp"
-                   android:layout_gravity="center"
-                   android:textAlignment="center"
-                   android:textSize="@dimen/standard"
-                   android:text="This is where the question comes in"
-                   android:id="@+id/quiz_question_text"/>
-
-           </LinearLayout>
-
-           <LinearLayout
-               android:layout_width="match_parent"
-               android:layout_height="wrap_content"
-               android:orientation="horizontal"
-               android:layout_alignParentBottom="true"
-               android:gravity="center"
-               android:visibility="invisible"
-               android:id="@+id/more_info_layout">
-
-               <FrameLayout
-                   android:layout_width="match_parent"
-                   android:layout_height="match_parent"
-                   android:layout_weight="1"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:layout_weight="1"
+                android:gravity="center">
 
                <LinearLayout
-                   android:layout_width="wrap_content"
-                   android:layout_height="wrap_content"
+                   android:layout_width="match_parent"
+                   android:layout_height="match_parent"
+                   android:orientation="vertical"
                    android:gravity="center"
-                   android:id="@+id/more_info">
+                   android:layout_weight="1">
 
-                   <android.support.v7.widget.AppCompatImageView
-                       android:layout_width="wrap_content"
+                   <android.support.v7.widget.AppCompatTextView
+                       android:layout_width="match_parent"
                        android:layout_height="wrap_content"
-                       android:src="@mipmap/info_results"/>
-
-                   <TextView
-                       android:layout_width="wrap_content"
-                       android:layout_height="wrap_content"
+                       android:textAlignment="center"
+                       android:text="1/15"
                        android:textSize="@dimen/standard"
-                       android:text="@string/more_info"/>
+                       android:id="@+id/counter_textview"/>
 
                </LinearLayout>
 
-               <FrameLayout
-                   android:layout_width="match_parent"
-                   android:layout_height="match_parent"
-                   android:layout_weight="1"/>
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scaleType="centerInside"
+                    android:layout_gravity="center"
+                    android:src="@drawable/colin_chapman"
+                    android:id="@+id/quiz_image_place"/>
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/next_question">
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
 
                     <android.support.v7.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/next_question"
-                        android:textSize="@dimen/standard"/>
+                        android:layout_gravity="center"
+                        android:textAlignment="center"
+                        android:textSize="@dimen/standard"
+                        android:text="This is where the question comes in"
+                        android:id="@+id/quiz_question_text"/>
 
                 </LinearLayout>
 
-               <FrameLayout
-                   android:layout_width="match_parent"
-                   android:layout_height="match_parent"
-                   android:layout_weight="1"/>
 
-           </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_alignParentBottom="true"
+                    android:gravity="center"
+                    android:visibility="invisible"
+                    android:id="@+id/more_info_layout">
 
-       </LinearLayout>
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"/>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:id="@+id/more_info">
+
+                        <android.support.v7.widget.AppCompatImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:src="@mipmap/info_results"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="@dimen/standard"
+                            android:text="@string/more_info"/>
+
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"/>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/next_question">
+
+                        <android.support.v7.widget.AppCompatTextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/next_question"
+                            android:textSize="@dimen/standard"/>
+
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
 
     </android.support.v7.widget.CardView>
 
