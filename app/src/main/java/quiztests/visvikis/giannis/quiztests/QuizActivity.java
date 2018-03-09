@@ -179,6 +179,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
 
 
 
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -259,21 +260,18 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
             @Override
             public void onAdLoaded() {
 
-                Toast.makeText(getApplicationContext(), "Ad Loaded", Toast.LENGTH_SHORT).show();
-
             }
 
 
             @Override
             public void onAdFailedToLoad(int errorCode) {
 
-                Toast.makeText(getApplicationContext(), "Add Failed to load", Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onAdClosed() {
 
-                Toast.makeText(getApplicationContext(), "Ad was closed", Toast.LENGTH_LONG).show();
+
             }
 
         });
