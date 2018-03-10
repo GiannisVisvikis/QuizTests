@@ -172,6 +172,7 @@ public class FeedTheQuizTaskLoader extends AsyncTaskLoader<ArrayList<QuizQuestio
 
                 String link = dataResults.getString(0);
                 String assetPath = dataResults.getString(1);
+                Log.e("FEED_ASSET", assetPath);
                 String question = dataResults.getString(2);
                 String correct = dataResults.getString(3);
                 String false1 = dataResults.getString(4);

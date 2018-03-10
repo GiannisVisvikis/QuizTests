@@ -60,7 +60,7 @@ public class QuizDialog extends DialogFragment {
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         AppCompatTextView correctAnswersTxtView = view.findViewById(R.id.quiz_result_txt);
-        correctAnswersTxtView.setText(correctAnswers + getString(R.string.correct));
+        correctAnswersTxtView.setText(correctAnswers + " " + getString(R.string.correct));
 
 
         AppCompatButton quitButton = view.findViewById(R.id.quiz_quit);

@@ -394,6 +394,7 @@ public class QuizActivity extends AppCompatActivity implements QuizCommunication
                public Loader<Drawable> onCreateLoader(int id, Bundle args) {
 
                    String pathToImage = filePathsList.get(questionIndex);
+                   Log.e("PATH", pathToImage);
                    return new QuizImageLoader(getApplicationContext(), pathToImage);
                }
 
