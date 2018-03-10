@@ -32,48 +32,31 @@
                 android:layout_weight="1"
                 android:gravity="center">
 
-               <LinearLayout
+               <android.support.v7.widget.AppCompatTextView
                    android:layout_width="match_parent"
-                   android:layout_height="match_parent"
-                   android:orientation="vertical"
-                   android:gravity="center"
-                   android:layout_weight="1">
-
-                   <android.support.v7.widget.AppCompatTextView
-                       android:layout_width="match_parent"
-                       android:layout_height="wrap_content"
-                       android:textAlignment="center"
-                       android:text="1/15"
-                       android:textSize="@dimen/standard"
-                       android:id="@+id/counter_textview"/>
-
-               </LinearLayout>
+                   android:layout_height="wrap_content"
+                   android:textAlignment="center"
+                   android:text="1/15"
+                   android:textSize="@dimen/standard"
+                   android:id="@+id/counter_textview"/>
 
                 <ImageView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:scaleType="centerInside"
                     android:layout_gravity="center"
+                    android:layout_weight="1"
                     android:src="@drawable/colin_chapman"
                     android:id="@+id/quiz_image_place"/>
 
-                <LinearLayout
+                <android.support.v7.widget.AppCompatTextView
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
-
-                    <android.support.v7.widget.AppCompatTextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:textAlignment="center"
-                        android:textSize="@dimen/standard"
-                        android:text="This is where the question comes in"
-                        android:id="@+id/quiz_question_text"/>
-
-                </LinearLayout>
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:textAlignment="center"
+                    android:textSize="@dimen/standard"
+                    android:text="This is where the question comes in"
+                    android:id="@+id/quiz_question_text"/>
 
 
                 <LinearLayout
