@@ -1,7 +1,5 @@
 package quiztests.visvikis.giannis.quiztests;
 
-import java.util.ArrayList;
-
 /**
  * Created by giannis on 21/2/2018.
  */
